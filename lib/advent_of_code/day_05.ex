@@ -53,15 +53,15 @@ defmodule AdventOfCode.Day05 do
   end
 
   defp parse_stacks(stacks) do
-    number_row = List.last(stacks) |> String.trim()
-    col_count = String.last(number_row) |> String.to_integer()
-    crates = Enum.take(stacks, length(stacks) - 1)
+    {crates, number_row} = Enum.split(stacks, -1)
+    col_count = hd(number_row) |> String.trim() |> String.last() |> String.to_integer()
     for col <- 0..(col_count - 1), into: %{}, do: {col + 1, parse_stack_col(crates, col)}
   end
 
   defp parse_stack_col(stacks, col) do
-    stacks = for row <- stacks, do: String.slice(row, col * 4 + 1, 1)
-    stacks |> Enum.filter(&not_empty/1)
+    stacks
+    |> Enum.map(&String.slice(&1, col * 4 + 1, 1))
+    |> Enum.filter(&not_empty/1)
   end
 
   defp not_empty(str), do: String.trim(str) != ""
