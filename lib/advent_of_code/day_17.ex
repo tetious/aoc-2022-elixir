@@ -106,37 +106,11 @@ defmodule Board do
 
     if blocked do
       resting_pieces = MapSet.new(Enum.concat(board.resting, Piece.get(piece)))
-
       top = resting_pieces |> Enum.max_by(fn {_, y} -> y end) |> elem(1)
 
-      # find the top solid row every x
       resting_pieces =
-        if board.resting_count > 0 && rem(board.resting_count, 100) == 0 do
-          by_y =
-            resting_pieces
-            |> Enum.group_by(&elem(&1, 1))
-
-          {top_complete_y, _} =
-            by_y
-            |> Enum.map(fn {y, list} -> {y, length(list)} end)
-            |> Enum.filter(&(elem(&1, 1) > 6))
-            |> Enum.sort_by(&elem(&1, 0), :desc)
-            |> List.first({0, 0})
-
-          if top_complete_y == 0 do
-            IO.puts("No luck optimizing on iteration #{board.resting_count}.")
-            resting_pieces
-          else
-            rest =
-              by_y
-              |> Map.values()
-              |> List.flatten()
-              |> Enum.filter(&(elem(&1, 1) > top_complete_y))
-
-              #IO.puts("Optimized on iteration #{board.resting_count} to y=#{top_complete_y}.")
-
-            MapSet.new(Enum.map(0..6, &{&1, top_complete_y}) |> Enum.concat(rest))
-          end
+        if board.resting_count > 0 && rem(board.resting_count, 64) == 0 do
+          resting_pieces |> MapSet.filter(&(elem(&1, 1) > top - 32))
         else
           resting_pieces
         end
@@ -166,7 +140,7 @@ defmodule AdventOfCode.Day17 do
   def part2(input) do
     input = input |> String.trim()
     input = %{drafts: input, drafts_len: String.length(input)}
-                            # 1_000_000_000_000
+    # 1_000_000_000_000
     board = Board.step(%Board{}, input, 1_000_000, 0)
     board.top
   end
