@@ -1,29 +1,59 @@
 defmodule AdventOfCode.Day18 do
   def part1(input) do
-    points =
+    blocks =
       input
-      |> String.split()
-      |> Enum.map(fn pt -> String.split(pt, ",") |> Enum.map(&String.to_integer/1) end)
+      |> parse()
+      |> MapSet.new()
 
-    points |> Enum.reduce(0, fn pt, a -> a + (6 - Enum.count(points, &is_neighbor(&1, pt))) end)
+    blocks
+    |> Enum.map(&(neighbors(&1) |> Enum.count(fn n -> n not in blocks end)))
+    |> Enum.sum()
   end
 
-  def part2(_args) do
+  def part2(input) do
+    blocks =
+      input
+      |> parse()
+      |> MapSet.new()
+
+    max_extent =
+      Enum.reduce(blocks, 0, fn {x, y, z}, a -> x |> max(y) |> max(z) |> max(a) end) + 1
+
+    flood(blocks, max_extent, [{-1, -1, -1}], MapSet.new())
+    |> Enum.map(&(neighbors(&1) |> Enum.count(fn n -> n in blocks end)))
+    |> Enum.sum()
   end
 
-  defp is_neighbor(pt1, pt2) do
-    case {pt1, pt2} do
-      {pt, pt} ->
-        false
+  defp flood(_blocks, _max_extent, [], closed), do: closed
 
-      {[x1, y1, z1], [x2, y2, z2]}
-      when (x1 == x2 and y1 == y2 and abs(z1 - z2) == 1) or
-             (x1 == x2 and z1 == z2 and abs(y1 - y2) == 1) or
-             (y1 == y2 and z1 == z2 and abs(x1 - x2) == 1) ->
-        true
+  defp flood(blocks, max_extent, [head | tail], closed) do
+    to_visit =
+      head
+      |> neighbors()
+      |> MapSet.difference(blocks)
+      |> MapSet.difference(closed)
+      |> Enum.filter(&in_bounds(&1, max_extent))
 
-      _ ->
-        false
-    end
+    flood(blocks, max_extent, to_visit ++ tail, MapSet.put(closed, head))
   end
+
+  defp in_bounds(block, max_extent) do
+    block |> Tuple.to_list() |> Enum.all?(&(&1 >= -1 and &1 <= max_extent))
+  end
+
+  defp parse(input) do
+    input
+    |> String.split()
+    |> Enum.map(fn pt ->
+      String.split(pt, ",") |> Enum.map(&String.to_integer/1) |> List.to_tuple()
+    end)
+  end
+
+  defp neighbors({x, y, z}),
+    do:
+      MapSet.new(
+        [-1, 1]
+        |> Enum.map(&[{x + &1, y, z}, {x, y + &1, z}, {x, y, z + &1}])
+        |> List.flatten()
+      )
 end
